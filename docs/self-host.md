@@ -313,18 +313,23 @@ Optional:
 ```env
 SIGNUPS_ENABLED=true
 SIGNUP_ALLOWLIST=you@example.com,@company.com
-SANDBOX_PROVIDER=docker   # or none, e2b, daytona, createos, box. Keep fake only for pnpm test.
+SANDBOX_PROVIDER=docker   # or none, e2b, daytona, createos, box, modal. Keep fake only for pnpm test.
 AGENT_RUNTIME=pi          # Keep scripted only for pnpm test.
 WAKEUP_DRIVER=graphile
 SANDBOX_IDLE_MS=600000    # pause or stop after 10 minutes idle; 0 disables idle sleep
 # Set 0 when self-hosting with Docker, where an idle computer costs nothing, to keep long-running apps and sessions up.
 # E2B, CreateOS and Box still apply their own timeouts.
+# Modal is created with an idle timeout derived from this value and stops an idle sandbox itself; its
+# volume keeps the computer's files and browser logins, so the next visit needs no upload.
 SANDBOX_COMMAND_TIMEOUT_MS=300000 # stop a shell command after 5 minutes
 MAX_TOOL_CALLS_PER_TURN=  # optional Pi turn tool-call fuse; unset/0 = unlimited
 E2B_API_KEY=              # when SANDBOX_PROVIDER=e2b
 DAYTONA_API_KEY=          # when SANDBOX_PROVIDER=daytona
 CREATEOS_SANDBOX_API_KEY= # when SANDBOX_PROVIDER=createos
 BOX_API_KEY=              # when SANDBOX_PROVIDER=box
+MODAL_TOKEN_ID=           # when SANDBOX_PROVIDER=modal
+MODAL_TOKEN_SECRET=       # together with MODAL_TOKEN_ID
+MODAL_ENVIRONMENT=        # optional Modal environment; unset uses the account default
 ```
 
 To use an operator-controlled OpenAI-compatible server such as Ollama, LM Studio, llama.cpp, or
@@ -385,7 +390,8 @@ The Electron desktop app is a client of the same API. Docker and E2B still apply
 
 - **Published images** (`docker-compose.images.yml`) default to `SANDBOX_PROVIDER=docker` with a
   local supervisor and published `ghcr.io/elie222/rakazo/computer` image. No E2B account required.
-  Optional: set `e2b`, `daytona`, `createos`, or `box` plus the matching API key for remote computers.
+  Optional: set `e2b`, `daytona`, `createos`, `box`, or `modal` plus the matching credential for
+  remote computers.
 - **Docker** is the quick-start default for published images and for a source checkout / full local
   Compose stack. Workspace bots share a persistent Team Computer by default; Private computers are
   optional. Keep the supervisor private, as the included Compose files do.
@@ -403,6 +409,13 @@ The Electron desktop app is a client of the same API. Docker and E2B still apply
   workspace under `/home/user/rakazo-home`, and refreshes a two-hour TTL. Box uses the shared Linux
   desktop runtime and protected port routes for concurrent bot desktops. Each bot has its own
   persistent Chrome profile; logins are not shared between bots.
+- **Modal** runs bot computers as Modal sandboxes through `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`,
+  with an optional `MODAL_ENVIRONMENT`. Each computer gets its own Modal volume mounted at its
+  workspace, so files and Chrome logins outlive the sandbox and a returning visit reconnects to the
+  same computer instead of a fresh one. Modal commits volume writes in the background and once more
+  when a sandbox terminates, and it bills the volume for as long as it exists. The sandbox is created
+  with an idle timeout derived from `SANDBOX_IDLE_MS`; with `SANDBOX_IDLE_MS=0` it still ends at
+  Modal's 24-hour maximum.
 - **Desktop provider** / **This Mac** runs commands on the API/worker host. Docker stays the default.
   The Electron app asks once; if you choose This Mac, bots can use working directories under your home
   folder. Do not enable it on a public or shared service. macOS does not show its own permission
@@ -470,7 +483,7 @@ WEB_ORIGIN=https://app.example.com
 API_URL=https://app.example.com
 SIGNUPS_ENABLED=true
 SIGNUP_ALLOWLIST=owner@example.com,reviewer@example.com
-# e2b, daytona, or box
+# e2b, daytona, box, or modal
 SANDBOX_PROVIDER=e2b
 AGENT_RUNTIME=pi
 WAKEUP_DRIVER=graphile

@@ -16,6 +16,10 @@ describe("resolveSandboxProvider", () => {
     expect(resolveSandboxProvider({ SANDBOX_PROVIDER: "daytona" })).toBe("none");
     expect(resolveSandboxProvider({ SANDBOX_PROVIDER: "createos" })).toBe("none");
     expect(resolveSandboxProvider({ SANDBOX_PROVIDER: "box" })).toBe("none");
+    expect(resolveSandboxProvider({ SANDBOX_PROVIDER: "modal" })).toBe("none");
+    expect(resolveSandboxProvider({ SANDBOX_PROVIDER: "modal", MODAL_TOKEN_SECRET: "s" })).toBe(
+      "none",
+    );
   });
 
   it("requires both Railway credentials and an environment", () => {
@@ -67,6 +71,21 @@ describe("resolveSandboxProvider", () => {
 });
 
 describe("sandboxProviderOptionsFromEnv", () => {
+  it("keeps Modal when its token id is set", () => {
+    const env = {
+      SANDBOX_PROVIDER: "modal",
+      MODAL_TOKEN_ID: "test-modal-token-id",
+      MODAL_TOKEN_SECRET: "test-modal-token-secret",
+      MODAL_ENVIRONMENT: "staging",
+    };
+    expect(resolveSandboxProvider(env)).toBe("modal");
+    expect(sandboxProviderOptionsFromEnv(env)).toMatchObject({
+      modalTokenId: "test-modal-token-id",
+      modalTokenSecret: "test-modal-token-secret",
+      modalEnvironment: "staging",
+    });
+  });
+
   it("loads CreateOS settings from the shared env contract", () => {
     expect(
       sandboxProviderOptionsFromEnv({

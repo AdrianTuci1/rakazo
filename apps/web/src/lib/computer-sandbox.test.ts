@@ -26,6 +26,7 @@ describe("classifySandboxProvider", () => {
     expect(classifySandboxProvider(null)).toBe("none");
     expect(classifySandboxProvider("docker")).toBe("docker");
     expect(classifySandboxProvider("e2b")).toBe("hosted");
+    expect(classifySandboxProvider("modal")).toBe("hosted");
   });
 });
 
@@ -40,6 +41,8 @@ describe("sandboxEnvGuidanceText", () => {
     expect(text).toContain("# SANDBOX_PROVIDER=e2b");
     expect(text).toContain("# SANDBOX_PROVIDER=daytona");
     expect(text).toContain("# SANDBOX_PROVIDER=box");
+    expect(text).toContain("# SANDBOX_PROVIDER=modal");
+    expect(text).toContain("# MODAL_TOKEN_ID=<your-token-id>");
   });
 });
 

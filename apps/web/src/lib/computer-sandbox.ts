@@ -30,6 +30,11 @@ export function sandboxEnvGuidanceLines(): string[] {
     "# SANDBOX_PROVIDER=box",
     "# BOX_API_KEY=<your-key>",
     "",
+    "# Hosted sandbox: Modal",
+    "# SANDBOX_PROVIDER=modal",
+    "# MODAL_TOKEN_ID=<your-token-id>",
+    "# MODAL_TOKEN_SECRET=<your-token-secret>",
+    "",
     "# Recreate the stack after changing .env",
   ];
 }
@@ -43,7 +48,8 @@ export type SandboxProviderKind = "none" | "docker" | "hosted" | "other";
 export function classifySandboxProvider(provider: string | null | undefined): SandboxProviderKind {
   if (provider == null || provider === "" || computersAreUnavailable(provider)) return "none";
   if (provider === "docker" || provider === "desktop") return "docker";
-  if (provider === "e2b" || provider === "daytona" || provider === "box") return "hosted";
+  if (provider === "e2b" || provider === "daytona" || provider === "box" || provider === "modal")
+    return "hosted";
   return "other";
 }
 
@@ -53,6 +59,7 @@ export function sandboxProviderLabel(provider: string): string {
   if (provider === "e2b") return "E2B";
   if (provider === "daytona") return "Daytona";
   if (provider === "box") return "Box";
+  if (provider === "modal") return "Modal";
   if (provider === "fake") return "Fake";
   return provider;
 }

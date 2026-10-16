@@ -31,6 +31,10 @@ describe("createSandboxProvider", () => {
       id: "box-emulator",
       capabilities: { multiScreen: true },
     });
+    expect(createSandboxProvider("modal-emulator", {}).describe()).toMatchObject({
+      id: "modal-emulator",
+      capabilities: { multiScreen: true },
+    });
   });
 
   it("boots without a remote key and keeps computers unavailable", async () => {
@@ -38,9 +42,13 @@ describe("createSandboxProvider", () => {
     expect(createSandboxProvider("daytona", {}).describe().id).toBe("none");
     expect(createSandboxProvider("createos", {}).describe().id).toBe("none");
     expect(createSandboxProvider("box", {}).describe().id).toBe("none");
+    expect(createSandboxProvider("modal", {}).describe().id).toBe("none");
     await expect(
       createSandboxProvider("e2b", {}).provision({ botId: "b", homePath: "/tmp" }, ctx),
     ).rejects.toThrow(/E2B_API_KEY/);
+    await expect(
+      createSandboxProvider("modal", {}).provision({ botId: "b", homePath: "/tmp" }, ctx),
+    ).rejects.toThrow(/MODAL_TOKEN_ID/);
     await expect(
       createSandboxProvider("createos", {}).provision({ botId: "b", homePath: "/tmp" }, ctx),
     ).rejects.toThrow(/CREATEOS_SANDBOX_API_KEY/);
@@ -48,11 +56,14 @@ describe("createSandboxProvider", () => {
       createSandboxProvider("createos", { createosApiKey: "test-createos-key" }).describe().id,
     ).toBe("createos");
     expect(createSandboxProvider("box", { boxApiKey: "test-box-key" }).describe().id).toBe("box");
+    expect(
+      createSandboxProvider("modal", { modalTokenId: "test-modal-token-id" }).describe().id,
+    ).toBe("modal");
   });
 
   it("throws on unknown provider", () => {
     expect(() => createSandboxProvider("bogus", {})).toThrow(
-      'Unknown SANDBOX_PROVIDER "bogus". Use none | docker | e2b | daytona | createos | box | railway | e2b-emulator | daytona-emulator | box-emulator | desktop | fake.',
+      'Unknown SANDBOX_PROVIDER "bogus". Use none | docker | e2b | daytona | createos | box | railway | modal | e2b-emulator | daytona-emulator | box-emulator | modal-emulator | desktop | fake.',
     );
   });
 });

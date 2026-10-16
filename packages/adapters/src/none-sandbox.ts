@@ -12,7 +12,7 @@ import type {
 } from "@rakazo/adapter-kit";
 
 export const NO_SANDBOX_MESSAGE =
-  "Computers unavailable. Set SANDBOX_PROVIDER=docker with SANDBOX_SUPERVISOR_TOKEN, or use e2b, daytona, or box with its API key.";
+  "Computers unavailable. Set SANDBOX_PROVIDER=docker with SANDBOX_SUPERVISOR_TOKEN, or use e2b, daytona, or box with its API key, or modal with MODAL_TOKEN_ID and MODAL_TOKEN_SECRET.";
 
 /** Boots the API without a computer host. Provision and runtime calls fail closed. */
 export class NoneSandboxProvider implements SandboxProvider {

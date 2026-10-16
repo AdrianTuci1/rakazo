@@ -49,6 +49,11 @@ export function e2bCreateOptions(botId: string, apiKey: string) {
 // from envd), which used to read as a live sandbox and left every later call throwing forever.
 const SANDBOX_GONE_MESSAGE =
   /probably not running anymore|likely due to sandbox timeout|killed or reached its end of life|sandbox [^:]{0,60}not found|sandbox [^:]{0,60}does not exist/i;
+// Modal words the same three cases differently: a Sandbox that Modal or a stop already
+// terminated reports that its task "has already completed", and a name lookup for one that is
+// gone reports the App or the Sandbox as not found.
+const MODAL_SANDBOX_GONE_MESSAGE =
+  /sandbox [^:]{0,60}not found|app '[^']{0,60}' not found|sandbox \S+ has already completed|the sandbox is unavailable\. this sandbox may have already shut down/i;
 // The same words from a live sandbox: a missing binary or a missing file inside it.
 const SHELL_MISSING_TARGET = /command not found|no such file|^path .* not found/i;
 /** Only provider-specific evidence of sandbox loss permits automatic replacement. */
@@ -56,6 +61,7 @@ export function isSandboxGoneError(error: unknown): boolean {
   const message = errorMessage(error);
   if (SHELL_MISSING_TARGET.test(message)) return false;
   if (SANDBOX_GONE_MESSAGE.test(message)) return true;
+  if (MODAL_SANDBOX_GONE_MESSAGE.test(message)) return true;
   for (let current: unknown = error; current instanceof Error; current = current.cause) {
     if (current.name === "SandboxNotFoundError") return true;
   }

@@ -8,6 +8,7 @@ import { DaytonaSandboxEmulator } from "./daytona-emulator.js";
 import { DesktopSandboxProvider } from "./desktop-sandbox.js";
 import { ManagedSandboxEmulator } from "./e2b-emulator.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
+import { ModalSandboxEmulator } from "./modal-emulator.js";
 import { provisionPrepared } from "./sandbox-test-support.js";
 
 const context = {
@@ -31,6 +32,7 @@ describe.each([
   ["managed emulator", () => Promise.resolve(new ManagedSandboxEmulator())],
   ["Daytona emulator", () => Promise.resolve(new DaytonaSandboxEmulator())],
   ["Box emulator", () => Promise.resolve(new BoxSandboxEmulator())],
+  ["Modal emulator", () => Promise.resolve(new ModalSandboxEmulator())],
   [
     "desktop",
     async () => {
@@ -282,6 +284,7 @@ async function providerSet(label: string): Promise<Array<[string, SandboxProvide
     ["managed", new ManagedSandboxEmulator()],
     ["daytona", new DaytonaSandboxEmulator()],
     ["box", new BoxSandboxEmulator()],
+    ["modal", new ModalSandboxEmulator()],
     ["desktop", new DesktopSandboxProvider({ root: await realpath(root) })],
   ];
 }

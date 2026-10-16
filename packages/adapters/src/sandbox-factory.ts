@@ -9,6 +9,8 @@ import { DockerSandboxProvider } from "./docker-sandbox.js";
 import { ManagedSandboxEmulator } from "./e2b-emulator.js";
 import { E2BSandboxProvider } from "./e2b-sandbox.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
+import { ModalSandboxEmulator } from "./modal-emulator.js";
+import { ModalSandboxProvider } from "./modal-sandbox.js";
 import { NoneSandboxProvider } from "./none-sandbox.js";
 import { RailwaySandboxProvider } from "./railway-sandbox.js";
 
@@ -28,11 +30,14 @@ export interface SandboxProviderOptions {
   railwayMaxWorkspaceFileBytes?: string;
   boxApiKey?: string;
   boxApiUrl?: string;
+  modalTokenId?: string;
+  modalTokenSecret?: string;
+  modalEnvironment?: string;
   dataDir?: string;
 }
 
 function missingRemoteKey(
-  provider: "e2b" | "daytona" | "createos" | "box" | "railway",
+  provider: "e2b" | "daytona" | "createos" | "box" | "railway" | "modal",
   envName: string,
 ): SandboxProvider {
   return new NoneSandboxProvider(
@@ -76,6 +81,13 @@ export function createSandboxProvider(kind: string, opts: SandboxProviderOptions
         environmentId: opts.railwayEnvironmentId,
         maxWorkspaceFileBytes: opts.railwayMaxWorkspaceFileBytes,
       });
+    case "modal":
+      if (!opts.modalTokenId?.trim()) return missingRemoteKey("modal", "MODAL_TOKEN_ID");
+      return new ModalSandboxProvider({
+        tokenId: opts.modalTokenId,
+        tokenSecret: opts.modalTokenSecret,
+        environment: opts.modalEnvironment,
+      });
     case "docker":
       return new DockerSandboxProvider(
         opts.supervisorUrl ?? "http://127.0.0.1:7091",
@@ -87,6 +99,8 @@ export function createSandboxProvider(kind: string, opts: SandboxProviderOptions
       return new DaytonaSandboxEmulator();
     case "box-emulator":
       return new BoxSandboxEmulator();
+    case "modal-emulator":
+      return new ModalSandboxEmulator();
     case "desktop":
       return new DesktopSandboxProvider({
         root: opts.dataDir,
@@ -95,7 +109,7 @@ export function createSandboxProvider(kind: string, opts: SandboxProviderOptions
       return new FakeSandboxProvider();
     default:
       throw new Error(
-        `Unknown SANDBOX_PROVIDER "${kind}". Use none | docker | e2b | daytona | createos | box | railway | e2b-emulator | daytona-emulator | box-emulator | desktop | fake.`,
+        `Unknown SANDBOX_PROVIDER "${kind}". Use none | docker | e2b | daytona | createos | box | railway | modal | e2b-emulator | daytona-emulator | box-emulator | modal-emulator | desktop | fake.`,
       );
   }
 }

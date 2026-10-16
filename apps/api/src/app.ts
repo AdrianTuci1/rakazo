@@ -291,6 +291,9 @@ export async function createApp(
       daytonaTarget: env.daytonaTarget,
       boxApiKey: env.boxApiKey,
       boxApiUrl: env.boxApiUrl,
+      modalTokenId: env.modalTokenId,
+      modalTokenSecret: env.modalTokenSecret,
+      modalEnvironment: env.modalEnvironment,
       dataDir: env.dataDir,
       prisma,
     });

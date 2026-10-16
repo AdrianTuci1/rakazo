@@ -8,6 +8,7 @@ import { DaytonaSandboxEmulator } from "./daytona-emulator.js";
 import { DesktopSandboxProvider } from "./desktop-sandbox.js";
 import { ManagedSandboxEmulator } from "./e2b-emulator.js";
 import { FakeSandboxProvider } from "./fake-sandbox.js";
+import { ModalSandboxEmulator } from "./modal-emulator.js";
 import { assertSandboxWorkspaceContract, provisionPrepared } from "./sandbox-test-support.js";
 
 const ctx = {
@@ -33,28 +34,33 @@ describe("sandbox conformance", () => {
     const managed = new ManagedSandboxEmulator();
     const daytona = new DaytonaSandboxEmulator();
     const box = new BoxSandboxEmulator();
+    const modal = new ModalSandboxEmulator();
     const desktop = new DesktopSandboxProvider();
     const a = await provisionPrepared(fake, { botId: "bot-a", homePath: "/tmp/a" }, ctx);
     const b = await provisionPrepared(managed, { botId: "bot-b", homePath: "/tmp/b" }, ctx);
     const c = await provisionPrepared(daytona, { botId: "bot-c", homePath: "/tmp/c" }, ctx);
     const d = await provisionPrepared(box, { botId: "bot-d", homePath: "/tmp/d" }, ctx);
-    const e = await provisionPrepared(desktop, { botId: "bot-e", homePath: "/tmp/e" }, ctx);
+    const e = await provisionPrepared(modal, { botId: "bot-e", homePath: "/tmp/e" }, ctx);
+    const f = await provisionPrepared(desktop, { botId: "bot-f", homePath: "/tmp/f" }, ctx);
     const outA = await drain(fake, a);
     const outB = await drain(managed, b);
     const outC = await drain(daytona, c);
     const outD = await drain(box, d);
-    const outE = await drain(desktop, e);
+    const outE = await drain(modal, e);
+    const outF = await drain(desktop, f);
     expect(outA).toContain("graphical-ok");
     expect(outB).toContain("graphical-ok");
     expect(outC).toContain("graphical-ok");
     expect(outD).toContain("graphical-ok");
     expect(outE).toContain("graphical-ok");
-    expect(new Set([a.id, b.id, c.id, d.id, e.id]).size).toBe(5);
+    expect(outF).toContain("graphical-ok");
+    expect(new Set([a.id, b.id, c.id, d.id, e.id, f.id]).size).toBe(6);
     await fake.destroy(a, ctx);
     await managed.destroy(b, ctx);
     await daytona.destroy(c, ctx);
     await box.destroy(d, ctx);
-    await desktop.destroy(e, ctx);
+    await modal.destroy(e, ctx);
+    await desktop.destroy(f, ctx);
   });
 
   it("offers the same observation, action, and workspace contract across providers", async () => {
@@ -63,6 +69,7 @@ describe("sandbox conformance", () => {
       new ManagedSandboxEmulator(),
       new DaytonaSandboxEmulator(),
       new BoxSandboxEmulator(),
+      new ModalSandboxEmulator(),
       new DesktopSandboxProvider(),
     ];
     for (const [index, provider] of providers.entries()) {
@@ -83,6 +90,7 @@ describe("sandbox conformance", () => {
       new ManagedSandboxEmulator(),
       new DaytonaSandboxEmulator(),
       new BoxSandboxEmulator(),
+      new ModalSandboxEmulator(),
       new DesktopSandboxProvider({ root }),
     ];
     vi.stubEnv("RAKAZO_COMMAND_UNSET_TEST", "fake-host-value");
@@ -253,6 +261,7 @@ describe("sandbox conformance", () => {
       new ManagedSandboxEmulator(),
       new DaytonaSandboxEmulator(),
       new BoxSandboxEmulator(),
+      new ModalSandboxEmulator(),
       new DesktopSandboxProvider({ root }),
     ];
     for (const [index, provider] of providers.entries()) {

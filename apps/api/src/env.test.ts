@@ -59,6 +59,12 @@ describe("loadEnv", () => {
     expect(
       loadEnv({
         ...base,
+        SANDBOX_PROVIDER: "modal",
+      }).sandboxProvider,
+    ).toBe("none");
+    expect(
+      loadEnv({
+        ...base,
         SANDBOX_PROVIDER: "createos",
       }).sandboxProvider,
     ).toBe("none");
@@ -104,6 +110,44 @@ describe("loadEnv", () => {
       boxApiKey: "test-box-key",
       boxApiUrl: "https://box.test/api/v1",
     });
+  });
+
+  it("leaves Modal unconfigured by default", () => {
+    const env = loadEnv(base);
+    expect(env.modalTokenId).toBeUndefined();
+    expect(env.modalTokenSecret).toBeUndefined();
+    expect(env.modalEnvironment).toBeUndefined();
+  });
+
+  it("loads provider-specific Modal configuration", () => {
+    const env = loadEnv({
+      ...base,
+      SANDBOX_PROVIDER: "modal",
+      MODAL_TOKEN_ID: "ak-fake-modal-token-id",
+      MODAL_TOKEN_SECRET: "as-fake-modal-token-secret",
+      MODAL_ENVIRONMENT: "test-environment",
+    });
+    expect(env).toMatchObject({
+      sandboxProvider: "modal",
+      modalTokenId: "ak-fake-modal-token-id",
+      modalTokenSecret: "as-fake-modal-token-secret",
+      modalEnvironment: "test-environment",
+    });
+  });
+
+  it("keeps Modal off the Docker supervisor path", () => {
+    const env = loadEnv({
+      DATABASE_URL: base.DATABASE_URL,
+      NODE_ENV: "production",
+      BETTER_AUTH_SECRET: "prod-auth-secret-with-enough-length",
+      ENCRYPTION_KEY: "prod-encryption-key-with-enough-length",
+      SCREEN_PROXY_SECRET: "prod-screen-proxy-secret-with-enough-length",
+      SANDBOX_PROVIDER: "modal",
+      MODAL_TOKEN_ID: "ak-fake-modal-token-id",
+      MODAL_TOKEN_SECRET: "as-fake-modal-token-secret",
+    });
+    expect(env.sandboxProvider).toBe("modal");
+    expect(env.sandboxSupervisorToken).toBeUndefined();
   });
 
   it("throws when production omits secrets", () => {

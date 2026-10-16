@@ -10,6 +10,7 @@ export function resolveSandboxProvider(source: NodeJS.ProcessEnv = process.env):
   if (requested === "daytona" && !optional(source.DAYTONA_API_KEY)) return "none";
   if (requested === "createos" && !optional(source.CREATEOS_SANDBOX_API_KEY)) return "none";
   if (requested === "box" && !optional(source.BOX_API_KEY)) return "none";
+  if (requested === "modal" && !optional(source.MODAL_TOKEN_ID)) return "none";
   if (
     requested === "railway" &&
     (!optional(source.RAILWAY_API_TOKEN) || !optional(source.RAILWAY_ENVIRONMENT_ID))
@@ -44,6 +45,9 @@ export function sandboxProviderOptionsFromEnv(
   | "railwayMaxWorkspaceFileBytes"
   | "boxApiKey"
   | "boxApiUrl"
+  | "modalTokenId"
+  | "modalTokenSecret"
+  | "modalEnvironment"
 > {
   return {
     e2bApiKey: source.E2B_API_KEY,
@@ -59,6 +63,9 @@ export function sandboxProviderOptionsFromEnv(
     railwayMaxWorkspaceFileBytes: source.RAILWAY_MAX_WORKSPACE_FILE_BYTES,
     boxApiKey: source.BOX_API_KEY,
     boxApiUrl: source.BOX_API_URL ?? source.BOX_BASE_URL,
+    modalTokenId: source.MODAL_TOKEN_ID,
+    modalTokenSecret: source.MODAL_TOKEN_SECRET,
+    modalEnvironment: source.MODAL_ENVIRONMENT,
   };
 }
 
