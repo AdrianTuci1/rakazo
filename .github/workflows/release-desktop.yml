@@ -1,8 +1,7 @@
 name: release-desktop
 
+# Fork-only: no tag starts this workflow here; run it by hand from the Actions tab.
 on:
-  push:
-    tags: ["v*"]
   workflow_dispatch:
 
 permissions:

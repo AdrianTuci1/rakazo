@@ -1,9 +1,8 @@
 name: publish Playwright report
 
+# Fork-only: the report has no ci run to follow here; no event starts this workflow.
 on:
-  workflow_run:
-    workflows: [ci]
-    types: [completed]
+  workflow_dispatch:
 
 permissions:
   actions: read

@@ -1,8 +1,7 @@
 name: nightly verification
 
+# Fork-only: no event starts this workflow here; run it by hand from the Actions tab.
 on:
-  schedule:
-    - cron: "23 2 * * *"
   workflow_dispatch:
 
 permissions:

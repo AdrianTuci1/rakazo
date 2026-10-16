@@ -1,8 +1,7 @@
 name: ci
+# Fork-only: no event starts this workflow here; run it by hand from the Actions tab.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -1,17 +1,7 @@
 name: Computer runtime
 
+# Fork-only: no event starts this workflow here; run it by hand from the Actions tab.
 on:
-  pull_request:
-    paths:
-      - .github/workflows/computer-replay.yml
-      - infra/sandboxes/computer/**
-      - infra/sandboxes/supervisor/**
-      - packages/core/src/node/**
-      - packages/adapters/src/docker-sandbox.ts
-      - packages/adapters/src/computer-browser.ts
-      - packages/testkit/src/computer-*.ts
-      - packages/testkit/src/cli/computer-replay.ts
-      - pnpm-lock.yaml
   workflow_dispatch:
 
 permissions:

@@ -3,9 +3,8 @@ name: Model catalog bump
 # The model catalog is compiled into the pinned @earendil-works/pi-* packages.
 # A weekly bump keeps new models (and dropped/renamed ones) flowing in as a
 # reviewable PR instead of a manual dependency chore.
+# Fork-only: the weekly schedule is off here; run it by hand from the Actions tab.
 on:
-  schedule:
-    - cron: "17 6 * * 1"
   workflow_dispatch:
 
 # The update job installs and runs unreviewed dependency code, so it gets no
