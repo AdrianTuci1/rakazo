@@ -83,6 +83,8 @@ describe("sandbox idle", () => {
 
     expect(harness.home.commit).not.toHaveBeenCalled();
     expect(harness.sandbox.stop).not.toHaveBeenCalled();
+    // The provider's own idle timeout would otherwise reclaim a sandbox the app still wants.
+    expect(harness.sandbox.keepAlive).toHaveBeenCalledOnce();
     expect(harness.jobs.enqueue).toHaveBeenCalledOnce();
   });
 

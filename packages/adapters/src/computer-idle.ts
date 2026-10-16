@@ -206,15 +206,19 @@ export async function sleepComputerIfIdle(
     if (!computer?.providerRef || computer.state !== "running") return;
   }
 
+  const ref = toComputerRef(computer);
   const activeStatuses = hasActiveComputerControl(computer)
     ? [...ACTIVE_RUN_STATUSES]
     : ACTIVE_RUN_STATUSES.filter((status) => status !== "waiting_takeover");
   if (await findActiveRun(deps.prisma, computerId, activeStatuses)) {
     scheduleComputerSleep(deps.jobs, computerId);
+    // A run that waits for the user can outlast a provider's own idle timeout, which then
+    // reclaims the sandbox under a computer the app still reports as running. Deferring the
+    // suspension has to renew the sandbox too.
+    await deps.sandbox.keepAlive?.(ref);
     return;
   }
 
-  const ref = toComputerRef(computer);
   const ctx: AdapterContext = {
     operationId: "computer.sleep",
     traceId: "computer.sleep",
