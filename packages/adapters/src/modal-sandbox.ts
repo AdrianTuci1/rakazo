@@ -1,14 +1,4 @@
 import { createHash, randomUUID } from "node:crypto";
-import {
-  AlreadyExistsError,
-  ModalClient,
-  NotFoundError,
-  type App,
-  type Image as ModalImage,
-  type Sandbox as ModalSandbox,
-  type SandboxCreateParams,
-  type Volume,
-} from "modal";
 import type {
   AdapterContext,
   CommandRequest,
@@ -26,6 +16,16 @@ import type {
   TerminalRequest,
 } from "@rakazo/adapter-kit";
 import { boundedSandboxCommandTimeoutMs } from "@rakazo/core";
+import {
+  AlreadyExistsError,
+  type App,
+  ModalClient,
+  type Image as ModalImage,
+  type Sandbox as ModalSandbox,
+  NotFoundError,
+  type SandboxCreateParams,
+  type Volume,
+} from "modal";
 import { computerIdleSleepEnabled, sandboxIdleMs } from "./computer-idle.js";
 import { normalizeWorkspacePath, shellQuote, workspacePath } from "./computer-support.js";
 import {
@@ -69,6 +69,11 @@ const MODAL_IMAGE_COMMANDS = [
     "chromium fonts-liberation fonts-dejavu-core dbus-x11 xdg-utils curl git jq",
     "openssh-client unzip xclip xsel",
     "&& rm -rf /var/lib/apt/lists/*",
+    // Fluxbox paints the root window through fbsetbg and pops a modal xmessage error over
+    // the desktop when it is missing. The computer image ships the same two shims.
+    `&& printf '%s\\n' '#!/bin/sh' 'exec xsetroot -solid "#111113" "$@"' > /usr/bin/fbsetbg`,
+    "&& chmod +x /usr/bin/fbsetbg",
+    "&& ln -sfn /bin/true /usr/bin/xmessage",
   ].join(" "),
 ];
 
@@ -207,7 +212,10 @@ export class ModalSandboxProvider implements SandboxProvider {
     return this.ref(name, request.botId, { fresh: volume.fresh || !reconnecting, started: true });
   }
 
-  private async volume(name: string, reconnecting: boolean): Promise<{ volume: Volume; fresh: boolean }> {
+  private async volume(
+    name: string,
+    reconnecting: boolean,
+  ): Promise<{ volume: Volume; fresh: boolean }> {
     if (reconnecting) {
       const existing = await this.client.volumes
         .fromName(name, { environment: this.environment })
@@ -234,7 +242,9 @@ export class ModalSandboxProvider implements SandboxProvider {
       // A sandbox of this name is already running: an earlier stop lost its race, or another
       // boot started it. Reconnecting by name adopts that computer instead of replacing it.
       if (!isAlreadyExists(error)) throw error;
-      return this.client.sandboxes.fromName(MODAL_APP_NAME, name, { environment: this.environment });
+      return this.client.sandboxes.fromName(MODAL_APP_NAME, name, {
+        environment: this.environment,
+      });
     }
   }
 
@@ -260,7 +270,9 @@ export class ModalSandboxProvider implements SandboxProvider {
         MODAL_FILE_TIMEOUT_MS,
       );
       if (workspace.code !== 0) {
-        throw new Error(workspace.stderr || workspace.stdout || "could not prepare Modal workspace");
+        throw new Error(
+          workspace.stderr || workspace.stdout || "could not prepare Modal workspace",
+        );
       }
       // The image already carries the desktop tools; this stays the idempotent safety net.
       const runtime = await this.runShell(sandbox, PREPARE_LINUX_DESKTOP, MODAL_SETUP_TIMEOUT_MS);
@@ -442,7 +454,10 @@ export class ModalSandboxProvider implements SandboxProvider {
       mode: "binary",
       timeoutMs: MODAL_FILE_TIMEOUT_MS,
     });
-    const stderr = read.stderr.readBytes().then(decodeText).catch(() => "");
+    const stderr = read.stderr
+      .readBytes()
+      .then(decodeText)
+      .catch(() => "");
     const content = read.stdout.readBytes();
     const code = await read.wait();
     const [bytes, error] = await Promise.all([content, stderr]);
@@ -620,14 +635,16 @@ export class ModalSandboxProvider implements SandboxProvider {
         ],
         { mode: "binary", timeoutMs: MODAL_FILE_TIMEOUT_MS },
       );
-      const stderr = process.stderr.readBytes().then(decodeText).catch(() => "");
-      const stdout = process.stdout.readBytes().then(decodeText).catch(() => "");
+      const stderr = process.stderr
+        .readBytes()
+        .then(decodeText)
+        .catch(() => "");
+      const stdout = process.stdout
+        .readBytes()
+        .then(decodeText)
+        .catch(() => "");
       try {
-        for (
-          let offset = 0;
-          offset < file.content.byteLength;
-          offset += MODAL_STDIN_CHUNK_BYTES
-        ) {
+        for (let offset = 0; offset < file.content.byteLength; offset += MODAL_STDIN_CHUNK_BYTES) {
           await process.stdin.writeBytes(
             file.content.subarray(offset, offset + MODAL_STDIN_CHUNK_BYTES),
           );
@@ -661,7 +678,9 @@ export class ModalSandboxProvider implements SandboxProvider {
       MODAL_FILE_TIMEOUT_MS,
     );
     if (result.code !== 0) {
-      throw new Error(result.stderr || result.stdout || "could not enumerate the computer workspace");
+      throw new Error(
+        result.stderr || result.stdout || "could not enumerate the computer workspace",
+      );
     }
     return parseFileEntries(result.stdout, MODAL_WORKSPACE).filter(
       (entry) => entry.kind === "file" && !shouldSkipPortableWorkspaceFile(entry.path),

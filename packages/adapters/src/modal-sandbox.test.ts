@@ -72,6 +72,11 @@ describe("ModalSandboxProvider", () => {
     expect(params?.idleTimeoutMs).toBe(DEFAULT_SANDBOX_IDLE_MS + IDLE_MARGIN_MS);
     expect(fixture.fromRegistry).toHaveBeenCalledWith("debian:bookworm-slim");
     expect(fixture.dockerfileCommands).toHaveBeenCalledWith([expect.stringContaining("chromium")]);
+    // Fluxbox needs both desktop shims, or the streamed desktop shows an "fbsetbg not found" dialog.
+    const imageCommands = (fixture.dockerfileCommands.mock.calls[0]![0] as string[]).join(" ");
+    expect(imageCommands).toContain("printf '%s\\n'");
+    expect(imageCommands).toContain("exec xsetroot -solid");
+    expect(imageCommands).toContain("ln -sfn /bin/true /usr/bin/xmessage");
     expect(provider.describe()).toMatchObject({
       id: "modal",
       capabilities: {
@@ -99,7 +104,12 @@ describe("ModalSandboxProvider", () => {
     const fixture = modalFixture({ running: true, volume: true });
     const provider = new ModalSandboxProvider({ tokenId: "test-token-id" }, fixture.client);
     const computer = await provider.provision(
-      { botId: HOME_KEY, homePath: "/unused", providerRef: "rakazo-existing", providerKind: "modal" },
+      {
+        botId: HOME_KEY,
+        homePath: "/unused",
+        providerRef: "rakazo-existing",
+        providerKind: "modal",
+      },
       context,
     );
 
@@ -118,7 +128,12 @@ describe("ModalSandboxProvider", () => {
     const fixture = modalFixture({ volume: true });
     const provider = new ModalSandboxProvider({ tokenId: "test-token-id" }, fixture.client);
     const computer = await provider.provision(
-      { botId: HOME_KEY, homePath: "/unused", providerRef: "rakazo-existing", providerKind: "modal" },
+      {
+        botId: HOME_KEY,
+        homePath: "/unused",
+        providerRef: "rakazo-existing",
+        providerKind: "modal",
+      },
       context,
     );
 
@@ -139,7 +154,12 @@ describe("ModalSandboxProvider", () => {
     const fixture = modalFixture();
     const provider = new ModalSandboxProvider({ tokenId: "test-token-id" }, fixture.client);
     const computer = await provider.provision(
-      { botId: HOME_KEY, homePath: "/unused", providerRef: "rakazo-existing", providerKind: "modal" },
+      {
+        botId: HOME_KEY,
+        homePath: "/unused",
+        providerRef: "rakazo-existing",
+        providerKind: "modal",
+      },
       context,
     );
 
@@ -159,7 +179,12 @@ describe("ModalSandboxProvider", () => {
     });
     const provider = new ModalSandboxProvider({ tokenId: "test-token-id" }, fixture.client);
     const computer = await provider.provision(
-      { botId: HOME_KEY, homePath: "/unused", providerRef: "rakazo-existing", providerKind: "modal" },
+      {
+        botId: HOME_KEY,
+        homePath: "/unused",
+        providerRef: "rakazo-existing",
+        providerKind: "modal",
+      },
       context,
     );
 
@@ -243,12 +268,15 @@ describe("ModalSandboxProvider", () => {
     expect(await provider.listFiles(computer, "bin", context)).toEqual([
       { path: "bin/tool", kind: "file", size: 4, executable: true },
     ]);
-    await expect(
-      provider.readFile(computer, "bin/tool", context, { maxBytes: 3 }),
-    ).rejects.toThrow("computer file exceeds 3 bytes");
+    await expect(provider.readFile(computer, "bin/tool", context, { maxBytes: 3 })).rejects.toThrow(
+      "computer file exceeds 3 bytes",
+    );
     expect(await provider.readFile(computer, "bin/tool", context, { maxBytes: 4 })).toEqual(binary);
 
-    fixture.files.set(`${WORKSPACE}/.browser-profiles/chromium/Cache/data.db`, Uint8Array.from([9]));
+    fixture.files.set(
+      `${WORKSPACE}/.browser-profiles/chromium/Cache/data.db`,
+      Uint8Array.from([9]),
+    );
     const exported = [];
     for await (const file of provider.exportWorkspace(computer, context)) exported.push(file);
     expect(exported).toEqual([{ path: "bin/tool", content: binary, executable: true }]);
@@ -394,7 +422,11 @@ describe("Modal sandbox-gone detection", () => {
 type ExecParams = { mode?: "text" | "binary"; workdir?: string; timeoutMs?: number };
 
 function modalFixture(
-  options: { running?: boolean; volume?: boolean; hangs?: (argv: readonly string[]) => boolean } = {},
+  options: {
+    running?: boolean;
+    volume?: boolean;
+    hangs?: (argv: readonly string[]) => boolean;
+  } = {},
 ) {
   const files = new Map<string, Uint8Array>();
   const executables = new Set<string>();
@@ -461,7 +493,11 @@ function modalFixture(
     }
     const desktop = respond(command);
     if (desktop) {
-      return fakeProcess({ code: desktop.exitCode, stdout: desktop.stdout, stderr: desktop.stderr });
+      return fakeProcess({
+        code: desktop.exitCode,
+        stdout: desktop.stdout,
+        stderr: desktop.stderr,
+      });
     }
     if (command.startsWith("test -f ")) {
       const marker = unquote(command.slice("test -f ".length).split(" && ")[0]!);

@@ -195,6 +195,7 @@ import {
 import {
   embeddableScreenUrl,
   loadComputerScreen,
+  screenCapabilityRenewIn,
   screenIframeSandbox,
 } from "../lib/computer-screen";
 import { publishComputerCommand } from "../lib/computer-workspace";
@@ -705,6 +706,8 @@ export function ShellPage() {
   const [runningRoutine, setRunningRoutine] = useState(false);
   const [routineError, setRoutineError] = useState<string | null>(null);
   const [screenUrl, setScreenUrl] = useState<string | null>(null);
+  // A retry can reissue the URL the viewer already holds, so remount the frame to reconnect.
+  const [screenReload, setScreenReload] = useState(0);
   const [computerOpen, setComputerOpen] = useState(false);
   const [computerBotId, setComputerBotId] = useState<string | undefined>();
   const computerOpenRef = useRef(false);
@@ -1129,6 +1132,45 @@ export function ShellPage() {
         setScreenUrl(screen.url);
         setComputerError(screen.error);
         setComputerErrorFromScreen(Boolean(screen.error));
+        cacheComputerFor(id, { screenUrl: screen.url });
+      },
+      fallbackError: t`Could not connect to the computer screen`,
+    });
+  }
+
+  /**
+   * Retry the screen. A computer that is asleep or stopped needs the boot path: re-reading
+   * the screen on its own returns the same empty state the user just saw.
+   */
+  async function retryComputerScreen(id: string) {
+    const cached = computerCacheRef.current.get(id);
+    const target = computer?.botId === id ? computer : (cached?.computer ?? null);
+    if (target?.state !== "running") {
+      await bootComputer({ botId: id, takeControl: false, overlay: computerOpen }).catch(
+        () => undefined,
+      );
+    }
+    setScreenReload((reload) => reload + 1);
+    await refreshComputerScreen(id).catch(() => null);
+  }
+
+  /**
+   * Reissue the capability while the seal still has life. A failed renewal keeps the live
+   * stream: only a seal that is actually about to lapse is worth dropping for.
+   */
+  function renewComputerScreen(id: string) {
+    const request = ++screenRequest.current;
+    return loadComputerScreen({
+      load: () => rpc.computer.screenUrl({ botId: id }),
+      isCurrent: () =>
+        request === screenRequest.current &&
+        (activeBotId.current === id || computerBotIdRef.current === id) &&
+        computerVisible.current,
+      commit: (screen) => {
+        if (!screen.url) return;
+        setScreenUrl(screen.url);
+        setComputerError(null);
+        setComputerErrorFromScreen(false);
         cacheComputerFor(id, { screenUrl: screen.url });
       },
       fallbackError: t`Could not connect to the computer screen`,
@@ -2743,7 +2785,7 @@ export function ShellPage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => computerBot && void refreshComputerScreen(computerBot.id)}
+          onClick={() => computerBot && void retryComputerScreen(computerBot.id)}
         >
           <Trans>Retry screen</Trans>
         </Button>
@@ -2761,6 +2803,17 @@ export function ShellPage() {
     !computerPreviewScreen &&
     !computerScreenError &&
     showComputerRecoveryHint;
+
+  useEffect(() => {
+    if ((panel !== "computer" && !computerOpen) || computer?.state !== "running") return;
+    const botId = computerBot?.id ?? active?.id;
+    const renewIn = screenCapabilityRenewIn(embeddedScreenUrl);
+    if (!botId || renewIn === null) return;
+    // The proxy revokes an open stream as soon as its seal expires, so an open viewer has to
+    // carry a capability that outlives it.
+    const timer = window.setTimeout(() => void renewComputerScreen(botId), renewIn);
+    return () => window.clearTimeout(timer);
+  }, [panel, computerOpen, computer?.state, computerBot?.id, active?.id, embeddedScreenUrl]);
 
   const userName = session.data?.user.name ?? t`You`;
   const initials = userName
@@ -3852,6 +3905,7 @@ export function ShellPage() {
                     <DesktopKindEmptyState className="grid h-full place-items-center px-6 text-center text-sm text-muted-foreground/80" />
                   ) : computer?.state === "running" && embeddedScreenUrl && !computerScreenError ? (
                     <iframe
+                      key={screenReload}
                       title={t`Bot screen preview`}
                       src={embeddedScreenUrl}
                       sandbox={screenIframeSandbox(embeddedScreenUrl)}
@@ -4787,6 +4841,7 @@ export function ShellPage() {
                 ) : computer?.state === "running" && embeddedScreenUrl && !computerScreenError ? (
                   <>
                     <iframe
+                      key={screenReload}
                       title={t`Bot screen`}
                       src={embeddedScreenUrl}
                       sandbox={screenIframeSandbox(embeddedScreenUrl)}

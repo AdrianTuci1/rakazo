@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { embeddableScreenUrl, loadComputerScreen, screenIframeSandbox } from "./computer-screen";
+import {
+  embeddableScreenUrl,
+  loadComputerScreen,
+  screenCapabilityRenewIn,
+  screenIframeSandbox,
+} from "./computer-screen";
 
 describe("computer screen requests", () => {
   it("shows connection failures and lets a successful retry clear them", async () => {
@@ -110,5 +115,24 @@ describe("screenIframeSandbox", () => {
       "allow-scripts allow-pointer-lock",
     );
     expect(screenIframeSandbox("http://127.0.0.1:5173/vnc.html")).toBeUndefined();
+  });
+});
+
+describe("screenCapabilityRenewIn", () => {
+  const now = 1_700_000_000_000;
+
+  it("waits until the seal is inside the API's reuse window", () => {
+    const url = `https://app.example/novnc/session/view/${now + 45 * 60_000}.sealed/vnc.html`;
+    expect(screenCapabilityRenewIn(url, now)).toBe(35 * 60_000);
+  });
+
+  it("renews immediately once the seal is about to lapse", () => {
+    const url = `https://app.example/novnc/session/view/${now + 60_000}.sealed/websockify`;
+    expect(screenCapabilityRenewIn(url, now)).toBe(0);
+  });
+
+  it("ignores a URL that carries no capability", () => {
+    expect(screenCapabilityRenewIn(null, now)).toBeNull();
+    expect(screenCapabilityRenewIn("https://screen.example/vnc.html", now)).toBeNull();
   });
 });
