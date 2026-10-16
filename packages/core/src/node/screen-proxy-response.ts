@@ -2,6 +2,12 @@ import type { IncomingHttpHeaders } from "node:http";
 
 const SENSITIVE_RESPONSE_HEADERS = new Set(["clear-site-data", "set-cookie", "set-cookie2"]);
 const SCREEN_SANDBOX = "sandbox allow-scripts allow-pointer-lock";
+/**
+ * An edge proxy in front of the deployment (Cloudflare) injects its bot-detection script into
+ * proxied HTML. That script reads a frame document, which throws inside the sandbox below, and
+ * noVNC's error handler then refuses to start the session. Ask for the document unchanged.
+ */
+const SCREEN_NO_TRANSFORM = "no-transform";
 
 /** Screen listeners are untrusted even when their capability URL is opened outside an iframe. */
 export function safeScreenProxyResponseHeaders(headers: IncomingHttpHeaders) {
@@ -21,6 +27,10 @@ export function safeScreenProxyResponseHeaders(headers: IncomingHttpHeaders) {
   safe["content-security-policy"] = [...policies, SCREEN_SANDBOX];
   // Module imports from the opaque sandbox origin still need access to noVNC assets.
   safe["access-control-allow-origin"] = "*";
+  const upstreamCacheControl = safe["cache-control"];
+  safe["cache-control"] = upstreamCacheControl
+    ? `${upstreamCacheControl}, ${SCREEN_NO_TRANSFORM}`
+    : SCREEN_NO_TRANSFORM;
   return safe;
 }
 

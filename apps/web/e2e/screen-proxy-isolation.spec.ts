@@ -175,12 +175,17 @@ for (const mode of ["development", "preview"] as const) {
         asset: "module loaded",
         socket: "ok",
         cookie: "blocked",
-        storage: "blocked",
+        // The sandboxed document gets an ephemeral store (so a listener like noVNC can start),
+        // never the application's storage: the private value the app wrote stays invisible.
+        storage: null,
         api: "blocked",
       });
       expect(response?.headers()["content-security-policy"]).toContain(
         "sandbox allow-scripts allow-pointer-lock",
       );
+      // An edge proxy that transforms the document would break it: it must arrive as served.
+      expect(response?.headers()["cache-control"]).toContain("no-transform");
+      expect(await response?.text()).toContain('Object.defineProperty(window, "localStorage"');
       expect(
         (await page.context().cookies(origin)).find((c) => c.name === "app-session")?.value,
       ).toBe("fake-session");
@@ -239,7 +244,7 @@ for (const mode of ["development", "preview"] as const) {
           asset: "module loaded",
           socket: "ok",
           cookie: "blocked",
-          storage: "blocked",
+          storage: null,
           parent: "blocked",
           api: "blocked",
         });
