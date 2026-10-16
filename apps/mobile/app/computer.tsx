@@ -22,6 +22,7 @@ import {
   COMPUTER_HEARTBEAT_MS,
   COMPUTER_LIFECYCLE_TIMEOUT_MS,
   computerLabel,
+  computerTakeoverBlocked,
   controlLabel,
   embeddableScreenUrl,
   nextLoadedScreenUrl,
@@ -73,6 +74,7 @@ export default function Computer() {
   useEffect(() => setScreenError(null), [embeddedScreenUrl]);
 
   const hasControl = computer?.controlHolder === "user" && computer.controlBotId === botId;
+  const takeoverBlocked = computerTakeoverBlocked(computer);
   const screenVisible =
     computerOpen && computer?.state === "running" && Boolean(embeddedScreenUrl) && !screenError;
   const loadedScreenUrl = nextLoadedScreenUrl(
@@ -218,7 +220,7 @@ export default function Computer() {
   /** Open the full window. Only an explicit Take control asks for the lease. */
   async function openComputer({ takeControl }: { takeControl: boolean }) {
     if (!botId) return;
-    const needsTakeover = takeControl && !hasControl;
+    const needsTakeover = takeControl && !hasControl && !takeoverBlocked;
     try {
       const opened = await bootComputer({
         takeControl: needsTakeover,
@@ -343,7 +345,7 @@ export default function Computer() {
             takeoverRequested={computer?.takeoverRequested ?? false}
             onRelease={releaseComputer}
           />
-        ) : (
+        ) : takeoverBlocked ? null : (
           <NativeActionButton
             label={t("Take control")}
             prominence="secondary"
@@ -476,17 +478,13 @@ export default function Computer() {
                       takeoverRequested={computer?.takeoverRequested ?? false}
                       onRelease={releaseComputer}
                     />
-                  ) : (
+                  ) : takeoverBlocked ? null : (
                     <NativeActionButton
                       label={t("Take control")}
                       prominence="secondary"
                       fill={false}
                       style={{ alignSelf: "center" }}
-                      onPress={() =>
-                        void bootComputer({ takeControl: true, overlay: false }).catch(
-                          () => undefined,
-                        )
-                      }
+                      onPress={() => void openComputer({ takeControl: true })}
                     />
                   )}
                   <GlassIconButton

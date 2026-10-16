@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import type { ComputerStatus } from "./computer.js";
 import {
+  computerTakeoverBlocked,
   controlLabel,
   embeddableScreenUrl,
   nextLoadedScreenUrl,
@@ -216,6 +217,15 @@ describe("computer copy", () => {
         "Chief",
       ),
     ).toBe("Asleep");
+  });
+
+  it("offers Take control only while no execution lease holds the computer", () => {
+    expect(computerTakeoverBlocked(computer({ busyBotName: "Chief" }))).toBe(true);
+    expect(computerTakeoverBlocked(computer({ busyBotName: null }))).toBe(false);
+    expect(computerTakeoverBlocked(computer({ busyBotName: null, takeoverRequested: true }))).toBe(
+      false,
+    );
+    expect(computerTakeoverBlocked(null)).toBe(false);
   });
 });
 

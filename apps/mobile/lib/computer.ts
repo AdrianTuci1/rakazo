@@ -178,6 +178,15 @@ export function controlLabel(computer: ComputerStatus | null, name: string, botI
   return computerLabel(computer?.mode, name);
 }
 
+/**
+ * The server sets `busyBotName` exactly while its execution lease refuses takeover, so an
+ * offered Take control would only ever return "Stop the bot first". A run waiting for the
+ * user has no busy bot and stays available.
+ */
+export function computerTakeoverBlocked(computer: ComputerStatus | null) {
+  return Boolean(computer?.busyBotName);
+}
+
 export function computerLabel(mode: ComputerMode | undefined, name: string) {
   return mode === "dedicated" ? t("{name}’s computer", { name }) : t("Team Computer");
 }

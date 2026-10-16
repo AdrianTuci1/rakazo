@@ -235,6 +235,18 @@ describe("computer screen", () => {
     expect(screens[0]?.getAttribute("data-elements-hidden")).toBe("true");
     expect(screens[0]?.getAttribute("data-important")).toBe("no-hide-descendants");
     const buttons = takeControlButtons(view);
+    expect(buttons).toEqual([]);
+  });
+
+  it("takes control from the full window once the bot stops using the computer", async () => {
+    respond({ ...botWorking, busyBotName: null });
+    const view = await render();
+
+    await act(async () => preview(view).click());
+    await settle();
+
+    const fullWindow = view.querySelector("section");
+    const buttons = takeControlButtons(view);
     expect(buttons).toHaveLength(2);
     for (const button of buttons) expect(button.dataset.prominence).toBe("secondary");
 
@@ -264,7 +276,7 @@ describe("computer screen", () => {
   });
 
   it("takes control only from the Take control button", async () => {
-    respond(botWorking);
+    respond({ ...botWorking, busyBotName: null });
     const view = await render();
 
     await act(async () => takeControlButtons(view)[0]?.click());
